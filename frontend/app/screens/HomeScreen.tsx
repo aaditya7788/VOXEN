@@ -25,6 +25,8 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [spacesRefreshKey, setSpacesRefreshKey] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   // Fetch joined spaces from backend via IconSidebar (using a callback prop)
   const handleSpacesUpdate = (userSpaces: any[]) => {
@@ -116,6 +118,25 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
         return <CreateSpace onBack={() => handleViewNavigate("home")} onCreateSpace={(data) => {
           refreshSpaces();
         }} />;
+      case "update-space":
+        return <CreateSpace
+          mode="edit"
+          initialData={{
+            ...selectedSpace,
+            // Ensure ID/slug mapping aligns with what CreateSpace expects
+            id: selectedSpace?.space_id || selectedSpace?.id, // UUID usually needed for PUT
+            category: selectedSpace?.category || "General",
+            logo: selectedSpace?.profile_pic || selectedSpace?.logo,
+            username: selectedSpace?.username || selectedSpace?.id // fallback if id is slug
+          }}
+          onBack={() => handleViewNavigate("space-profile")}
+          onCreateSpace={(data) => {
+            refreshSpaces();
+            // Optionally update selectedSpace here if instant reflection needed
+            // But refreshSpaces + Sidebar logic might handle it
+            handleViewNavigate("space-profile");
+          }}
+        />;
       case "overview":
         return <Overview spaceId={selectedSpace?.space_id} />;
       case "activity":
@@ -147,6 +168,7 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
           spaceSlug={selectedSpace?.id}
           spaceName={selectedSpace?.name}
           userRole={selectedSpace?.user_role}
+          searchQuery={searchQuery}
         />;
     }
   };
@@ -216,13 +238,20 @@ export default function HomeScreen({ onNavigate }: HomeScreenProps) {
           <div className="flex items-center gap-2 md:gap-4">
             {activeView === "proposals" && (
               <div className="relative hidden sm:block">
-                <div className="absolute left-3 top-2 text-base-text-secondary">
+                <div className="absolute left-3 top-2 text-base-text-secondary cursor-pointer hover:text-primary transition-colors" onClick={() => setSearchQuery(searchInput)}>
                   <SearchOutline width="18px" height="18px" color="currentColor" />
                 </div>
                 <input
                   className="pl-9 pr-4 py-1.5 bg-base-bg-secondary dark:bg-dark-bg border border-transparent focus:bg-white dark:focus:bg-dark-bg-secondary focus:border-primary hover:border-base-border dark:hover:border-dark-border rounded-full text-sm text-base-text dark:text-dark-text focus:ring-0 w-48 md:w-64 placeholder:text-base-text-secondary/70 transition-all"
                   placeholder="Search proposals"
                   type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setSearchQuery(searchInput);
+                    }
+                  }}
                 />
               </div>
             )}

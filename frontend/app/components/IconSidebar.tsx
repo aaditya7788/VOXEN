@@ -20,6 +20,12 @@ interface UserSpace {
   user_role: string;
   username?: string | null;
   invite_token?: string | null;
+  created_at?: string;
+  description?: string;
+  member_count?: number;
+  proposal_count?: number;
+  visibility?: string;
+  joined_at?: string;
 }
 
 interface NavIconProps {
@@ -60,11 +66,10 @@ function NavIcon({
         )}
 
         <div
-          className={`size-12 rounded-3xl ${
-            selected
-              ? "rounded-2xl shadow-glow ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-dark-bg-secondary"
-              : "group-hover:rounded-2xl hover:shadow-md ring-1 ring-base-border dark:ring-dark-border group-hover:ring-transparent"
-          } bg-cover bg-center cursor-pointer transition-all duration-200`}
+          className={`size-12 rounded-3xl ${selected
+            ? "rounded-2xl shadow-glow ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-dark-bg-secondary"
+            : "group-hover:rounded-2xl hover:shadow-md ring-1 ring-base-border dark:ring-dark-border group-hover:ring-transparent"
+            } bg-cover bg-center cursor-pointer transition-all duration-200`}
           style={{ backgroundImage: `url('${image}')` }}
         />
 
@@ -89,11 +94,10 @@ function NavIcon({
         )}
 
         <div
-          className={`size-12 rounded-3xl bg-linear-to-br from-primary to-blue-400 text-white font-bold text-lg ${
-            selected
-              ? "rounded-2xl shadow-glow ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-dark-bg-secondary"
-              : "group-hover:rounded-2xl hover:shadow-md"
-          } flex items-center justify-center cursor-pointer transition-all duration-200`}
+          className={`size-12 rounded-3xl bg-linear-to-br from-primary to-blue-400 text-white font-bold text-lg ${selected
+            ? "rounded-2xl shadow-glow ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-dark-bg-secondary"
+            : "group-hover:rounded-2xl hover:shadow-md"
+            } flex items-center justify-center cursor-pointer transition-all duration-200`}
         >
           {tooltip.charAt(0).toUpperCase()}
         </div>
@@ -118,11 +122,10 @@ function NavIcon({
       )}
 
       <div
-        className={`size-12 rounded-3xl group-hover:rounded-2xl ${
-          active
-            ? "bg-primary text-white shadow-glow"
-            : "bg-base-bg-secondary dark:bg-dark-border group-hover:bg-primary text-base-text dark:text-dark-text group-hover:text-white"
-        } flex items-center justify-center cursor-pointer transition-all duration-200 shadow-soft hover:shadow-glow`}
+        className={`size-12 rounded-3xl group-hover:rounded-2xl ${active
+          ? "bg-primary text-white shadow-glow"
+          : "bg-base-bg-secondary dark:bg-dark-border group-hover:bg-primary text-base-text dark:text-dark-text group-hover:text-white"
+          } flex items-center justify-center cursor-pointer transition-all duration-200 shadow-soft hover:shadow-glow`}
       >
         {icon && iconMap[icon]}
       </div>
@@ -152,6 +155,12 @@ interface IconSidebarProps {
     user_role?: string;
     username?: string | null;
     invite_token?: string | null;
+    created_at?: string;
+    description?: string;
+    member_count?: number;
+    proposal_count?: number;
+    visibility?: string;
+    joined_at?: string;
   }[]) => void;
 }
 
@@ -180,7 +189,7 @@ function AddSpaceModal({ isOpen, onClose, onCreateSpace, onJoinSpace }: {
       const timeoutId = setTimeout(() => {
         document.addEventListener("mousedown", handleClickOutside);
       }, 10);
-      
+
       return () => {
         clearTimeout(timeoutId);
         document.removeEventListener("mousedown", handleClickOutside);
@@ -239,98 +248,98 @@ function AddSpaceModal({ isOpen, onClose, onCreateSpace, onJoinSpace }: {
     <>
       {/* Backdrop - always visible */}
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-      
+
       {/* Modal - Bottom sheet on mobile, centered dialog on desktop */}
-      <div 
+      <div
         ref={modalRef}
         className="fixed inset-x-0 bottom-0 w-full bg-white dark:bg-dark-bg-secondary rounded-t-2xl shadow-2xl border-t border-base-border dark:border-dark-border z-50 overflow-hidden animate-in slide-in-from-bottom duration-200 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-100 md:max-w-[90vw] md:rounded-xl md:border md:border-t md:fade-in md:zoom-in-95"
       >
-      {mode === "menu" ? (
-        <>
-          {/* Drag handle for mobile */}
-          <div className="flex justify-center pt-3 pb-1 md:hidden">
-            <div className="w-10 h-1 bg-base-border dark:bg-dark-border rounded-full" />
-          </div>
-          <div className="p-4 border-b border-base-border dark:border-dark-border">
-            <h3 className="text-base font-bold text-base-text dark:text-dark-text">Add a Space</h3>
-            <p className="text-xs text-base-text-secondary dark:text-dark-text-secondary mt-1">
-              Create your own space or join an existing one
-            </p>
-          </div>
-          <div className="p-3 md:p-2">
-            <button
-              onClick={handleCreateClick}
-              className="w-full flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg hover:bg-base-bg-secondary dark:hover:bg-dark-border/50 active:bg-base-bg-secondary dark:active:bg-dark-border/50 transition-colors group"
-            >
-              <div className="size-12 md:size-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-active:bg-primary group-hover:text-white group-active:text-white transition-colors">
-                <AddCircleOutline width="22px" height="22px" color="currentColor" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-base md:text-sm font-semibold text-base-text dark:text-dark-text">Create a Space</p>
-                <p className="text-sm md:text-xs text-base-text-secondary dark:text-dark-text-secondary">Start a new community</p>
-              </div>
-            </button>
-            <button
-              onClick={() => setMode("join")}
-              className="w-full flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg hover:bg-base-bg-secondary dark:hover:bg-dark-border/50 active:bg-base-bg-secondary dark:active:bg-dark-border/50 transition-colors group"
-            >
-              <div className="size-12 md:size-10 rounded-full bg-green-500/10 dark:bg-green-500/20 flex items-center justify-center text-green-600 dark:text-green-400 group-hover:bg-green-500 group-active:bg-green-500 group-hover:text-white group-active:text-white transition-colors">
-                <LinkOutline width="22px" height="22px" color="currentColor" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-base md:text-sm font-semibold text-base-text dark:text-dark-text">Join a Space</p>
-                <p className="text-sm md:text-xs text-base-text-secondary dark:text-dark-text-secondary">Enter an invite link</p>
-              </div>
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Drag handle for mobile */}
-          <div className="flex justify-center pt-3 pb-1 md:hidden">
-            <div className="w-10 h-1 bg-base-border dark:bg-dark-border rounded-full" />
-          </div>
-          <div className="p-4 border-b border-base-border dark:border-dark-border flex items-center gap-2">
-            <button 
-              onClick={() => setMode("menu")}
-              className="text-base-text-secondary hover:text-base-text dark:hover:text-dark-text transition-colors"
-            >
-              <CloseOutline width="20px" height="20px" color="currentColor" />
-            </button>
-            <h3 className="text-base font-bold text-base-text dark:text-dark-text">Join a Space</h3>
-          </div>
-          <div className="p-5 md:p-4 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-base-text-secondary dark:text-dark-text-secondary uppercase tracking-wide mb-2">
-                Invite Link
-              </label>
-              <input
-                type="text"
-                value={inviteLink}
-                onChange={(e) => setInviteLink(e.target.value)}
-                placeholder="https://voxen.xyz/invite/abc123"
-                className="w-full px-4 md:px-3 py-3.5 md:py-2.5 bg-base-bg-secondary dark:bg-dark-border rounded-lg border border-base-border dark:border-dark-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-base md:text-sm text-base-text dark:text-dark-text placeholder:text-base-text-secondary/50 dark:placeholder:text-dark-text-secondary/50 transition-all"
-                onKeyDown={(e) => e.key === "Enter" && handleJoinSubmit()}
-                autoComplete="off"
-                autoCapitalize="off"
-              />
-              <p className="text-sm md:text-xs text-base-text-secondary dark:text-dark-text-secondary mt-2">
-                Example: https://voxen.xyz/invite/abc123 or just the invite code
+        {mode === "menu" ? (
+          <>
+            {/* Drag handle for mobile */}
+            <div className="flex justify-center pt-3 pb-1 md:hidden">
+              <div className="w-10 h-1 bg-base-border dark:bg-dark-border rounded-full" />
+            </div>
+            <div className="p-4 border-b border-base-border dark:border-dark-border">
+              <h3 className="text-base font-bold text-base-text dark:text-dark-text">Add a Space</h3>
+              <p className="text-xs text-base-text-secondary dark:text-dark-text-secondary mt-1">
+                Create your own space or join an existing one
               </p>
             </div>
-            <button
-              onClick={handleJoinSubmit}
-              disabled={!inviteLink.trim()}
-              className="w-full py-3.5 md:py-2.5 bg-primary hover:bg-primary-hover active:bg-primary-hover disabled:bg-base-bg-secondary disabled:dark:bg-dark-border disabled:text-base-text-secondary disabled:dark:text-dark-text-secondary text-white font-semibold rounded-lg transition-colors disabled:cursor-not-allowed text-base md:text-sm"
-            >
-              Join Space
-            </button>
-          </div>
-        </>
-      )}
-      {/* Safe area padding for mobile devices with notch/home indicator */}
-      <div className="h-safe-area-inset-bottom md:hidden" />
-    </div>
+            <div className="p-3 md:p-2">
+              <button
+                onClick={handleCreateClick}
+                className="w-full flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg hover:bg-base-bg-secondary dark:hover:bg-dark-border/50 active:bg-base-bg-secondary dark:active:bg-dark-border/50 transition-colors group"
+              >
+                <div className="size-12 md:size-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary group-hover:bg-primary group-active:bg-primary group-hover:text-white group-active:text-white transition-colors">
+                  <AddCircleOutline width="22px" height="22px" color="currentColor" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-base md:text-sm font-semibold text-base-text dark:text-dark-text">Create a Space</p>
+                  <p className="text-sm md:text-xs text-base-text-secondary dark:text-dark-text-secondary">Start a new community</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setMode("join")}
+                className="w-full flex items-center gap-4 md:gap-3 p-4 md:p-3 rounded-lg hover:bg-base-bg-secondary dark:hover:bg-dark-border/50 active:bg-base-bg-secondary dark:active:bg-dark-border/50 transition-colors group"
+              >
+                <div className="size-12 md:size-10 rounded-full bg-green-500/10 dark:bg-green-500/20 flex items-center justify-center text-green-600 dark:text-green-400 group-hover:bg-green-500 group-active:bg-green-500 group-hover:text-white group-active:text-white transition-colors">
+                  <LinkOutline width="22px" height="22px" color="currentColor" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-base md:text-sm font-semibold text-base-text dark:text-dark-text">Join a Space</p>
+                  <p className="text-sm md:text-xs text-base-text-secondary dark:text-dark-text-secondary">Enter an invite link</p>
+                </div>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Drag handle for mobile */}
+            <div className="flex justify-center pt-3 pb-1 md:hidden">
+              <div className="w-10 h-1 bg-base-border dark:bg-dark-border rounded-full" />
+            </div>
+            <div className="p-4 border-b border-base-border dark:border-dark-border flex items-center gap-2">
+              <button
+                onClick={() => setMode("menu")}
+                className="text-base-text-secondary hover:text-base-text dark:hover:text-dark-text transition-colors"
+              >
+                <CloseOutline width="20px" height="20px" color="currentColor" />
+              </button>
+              <h3 className="text-base font-bold text-base-text dark:text-dark-text">Join a Space</h3>
+            </div>
+            <div className="p-5 md:p-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-base-text-secondary dark:text-dark-text-secondary uppercase tracking-wide mb-2">
+                  Invite Link
+                </label>
+                <input
+                  type="text"
+                  value={inviteLink}
+                  onChange={(e) => setInviteLink(e.target.value)}
+                  placeholder="https://voxen.xyz/invite/abc123"
+                  className="w-full px-4 md:px-3 py-3.5 md:py-2.5 bg-base-bg-secondary dark:bg-dark-border rounded-lg border border-base-border dark:border-dark-border focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-base md:text-sm text-base-text dark:text-dark-text placeholder:text-base-text-secondary/50 dark:placeholder:text-dark-text-secondary/50 transition-all"
+                  onKeyDown={(e) => e.key === "Enter" && handleJoinSubmit()}
+                  autoComplete="off"
+                  autoCapitalize="off"
+                />
+                <p className="text-sm md:text-xs text-base-text-secondary dark:text-dark-text-secondary mt-2">
+                  Example: https://voxen.xyz/invite/abc123 or just the invite code
+                </p>
+              </div>
+              <button
+                onClick={handleJoinSubmit}
+                disabled={!inviteLink.trim()}
+                className="w-full py-3.5 md:py-2.5 bg-primary hover:bg-primary-hover active:bg-primary-hover disabled:bg-base-bg-secondary disabled:dark:bg-dark-border disabled:text-base-text-secondary disabled:dark:text-dark-text-secondary text-white font-semibold rounded-lg transition-colors disabled:cursor-not-allowed text-base md:text-sm"
+              >
+                Join Space
+              </button>
+            </div>
+          </>
+        )}
+        {/* Safe area padding for mobile devices with notch/home indicator */}
+        <div className="h-safe-area-inset-bottom md:hidden" />
+      </div>
     </>
   );
 }
@@ -380,6 +389,12 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
       user_role: s.user_role,
       username: s.username || null,
       invite_token: s.invite_token || null,
+      created_at: s.created_at,
+      description: s.description,
+      member_count: s.members?.length || s.member_count || 0, // Handle different API responses
+      proposal_count: s.proposal_count,
+      visibility: s.visibility,
+      joined_at: s.joined_at,
     }));
   };
 
@@ -418,7 +433,7 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
           const freshSpaces = data.data || [];
           setUserSpaces(freshSpaces);
           cacheSpaces(freshSpaces);
-          
+
           // Call callback with display format
           if (onSpacesUpdate) {
             const displaySpaces = toDisplayFormat(freshSpaces);
@@ -461,12 +476,12 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
     }
   }, [isConnected]);
   // Convert user spaces to display format
-   const displaySpaces = userSpaces.map(s => ({
-         id: s.slug,
-         name: s.name,
-         tooltip: s.name,
-         image: s.logo || "",
-       }));
+  const displaySpaces = userSpaces.map(s => ({
+    id: s.slug,
+    name: s.name,
+    tooltip: s.name,
+    image: s.logo || "",
+  }));
 
   useEffect(() => {
     if (activeNavId !== undefined) setActiveNav(activeNavId);
@@ -497,10 +512,10 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
       {/* Sidebar - Mobile only, hidden on md+ screens */}
       {displaySpaces.length > 0 && (
         <nav className="md:hidden w-15 bg-white dark:bg-dark-bg-secondary flex flex-col items-center py-3 gap-2 border-r border-base-border dark:border-dark-border shrink-0 z-20 overflow-y-auto scrollbar-hide">
-            {/* Voxen favicon (static, not selectable) */}
-            <div className="w-full flex items-center justify-center py-2">
-              <img src="/favicon.ico" alt="Voxen" className="w-8 h-8 rounded-md object-contain" />
-            </div>
+          {/* Voxen favicon (static, not selectable) */}
+          <div className="w-full flex items-center justify-center py-2">
+            <img src="/favicon.ico" alt="Voxen" className="w-8 h-8 rounded-md object-contain" />
+          </div>
           {displaySpaces.map((space) => (
             <button
               key={space.id}
@@ -512,20 +527,18 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
               )}
               {space.image ? (
                 <div
-                  className={`size-10 rounded-2xl bg-cover bg-center transition-all duration-200 ${
-                    selectedSpace === space.id
-                      ? "rounded-xl ring-2 ring-primary"
-                      : "hover:rounded-xl"
-                  }`}
+                  className={`size-10 rounded-2xl bg-cover bg-center transition-all duration-200 ${selectedSpace === space.id
+                    ? "rounded-xl ring-2 ring-primary"
+                    : "hover:rounded-xl"
+                    }`}
                   style={{ backgroundImage: `url('${space.image}')` }}
                 />
               ) : (
                 <div
-                  className={`size-10 rounded-2xl bg-linear-to-br from-primary to-blue-400 transition-all duration-200 flex items-center justify-center text-white font-bold text-sm ${
-                    selectedSpace === space.id
-                      ? "rounded-xl ring-2 ring-primary"
-                      : "hover:rounded-xl"
-                  }`}
+                  className={`size-10 rounded-2xl bg-linear-to-br from-primary to-blue-400 transition-all duration-200 flex items-center justify-center text-white font-bold text-sm ${selectedSpace === space.id
+                    ? "rounded-xl ring-2 ring-primary"
+                    : "hover:rounded-xl"
+                    }`}
                 >
                   {space.name.charAt(0).toUpperCase()}
                 </div>
@@ -533,7 +546,7 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
             </button>
           ))}
           {/* Add Space Button */}
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               setShowAddModal(true);
@@ -576,7 +589,7 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
           />
         ))}
         <div className="relative">
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               setShowAddModal(true);
@@ -594,11 +607,10 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
           {/* Home */}
           <button
             onClick={() => handleSelectOption("nav", "home")}
-            className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors ${
-              activeNav === "home"
-                ? "text-primary"
-                : "text-base-text-secondary dark:text-dark-text-secondary"
-            }`}
+            className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors ${activeNav === "home"
+              ? "text-primary"
+              : "text-base-text-secondary dark:text-dark-text-secondary"
+              }`}
           >
             <HomeOutline width="24px" height="24px" color="currentColor" />
             <span className="text-[10px] font-medium">Home</span>
@@ -607,11 +619,10 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
           {/* Explore */}
           <button
             onClick={() => handleSelectOption("nav", "explore")}
-            className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors ${
-              activeNav === "explore"
-                ? "text-primary"
-                : "text-base-text-secondary dark:text-dark-text-secondary"
-            }`}
+            className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors ${activeNav === "explore"
+              ? "text-primary"
+              : "text-base-text-secondary dark:text-dark-text-secondary"
+              }`}
           >
             <CompassOutline width="24px" height="24px" color="currentColor" />
             <span className="text-[10px] font-medium">Explore</span>
@@ -629,11 +640,10 @@ export default function IconSidebar({ onSelectOption, activeNavId, selectedSpace
           {/* Profile */}
           <button
             onClick={() => handleSelectOption("nav", "profile")}
-            className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors ${
-              activeNav === "profile"
-                ? "text-primary"
-                : "text-base-text-secondary dark:text-dark-text-secondary"
-            }`}
+            className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-colors ${activeNav === "profile"
+              ? "text-primary"
+              : "text-base-text-secondary dark:text-dark-text-secondary"
+              }`}
           >
             <PersonOutline width="24px" height="24px" color="currentColor" />
             <span className="text-[10px] font-medium">Profile</span>

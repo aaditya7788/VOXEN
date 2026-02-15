@@ -22,6 +22,7 @@ interface ProposalsProps {
   spaceSlug?: string;
   spaceName?: string;
   userRole?: string | null;
+  searchQuery?: string;
 }
 
 const statusStyles: Record<string, string> = {
@@ -37,12 +38,12 @@ const votingTypeLabel: Record<VotingType, string> = {
   weighted: "Weighted voting",
 };
 
-export default function Proposals({ spaceId, spaceSlug, spaceName, userRole }: ProposalsProps) {
+export default function Proposals({ spaceId, spaceSlug, spaceName, userRole, searchQuery = "" }: ProposalsProps) {
   const { isConnected } = useAccount();
   const [resolvedSpaceId, setResolvedSpaceId] = useState<string | null>(spaceId || null);
   const [activeFilter, setActiveFilter] = useState<ProposalStatus | "all">("active");
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC");
-  const [searchQuery, setSearchQuery] = useState("");
+
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [proposalVoters, setProposalVoters] = useState<any[]>([]);
@@ -93,7 +94,7 @@ export default function Proposals({ spaceId, spaceSlug, spaceName, userRole }: P
 
         if (miningToastId) removeToast(miningToastId);
         setMiningToastId(null);
-        
+
 
         // Prepare vote payload based on selection
         let votes: any = null;
@@ -197,7 +198,7 @@ export default function Proposals({ spaceId, spaceSlug, spaceName, userRole }: P
       const user = data.data || data;
 
       // Debug: Log the response
-      
+
 
       // Check for Twitter - if twitter_handle or twitter_linked_at exists, Twitter is linked
       const twitterLinked = !!(user.twitter_handle || user.twitter_linked_at);
@@ -205,7 +206,7 @@ export default function Proposals({ spaceId, spaceSlug, spaceName, userRole }: P
       // Check for Email - if email_verified_at exists, email is verified
       const emailVerified = !!user.email_verified_at;
 
-      
+
 
       setCurrentUserId(user.id?.toString() || null);
       setCurrentUsername(user.username || null);
@@ -341,17 +342,37 @@ export default function Proposals({ spaceId, spaceSlug, spaceName, userRole }: P
 
   // Check if there's a proposal to open from activity/notification click
   useEffect(() => {
-    if (proposals.length === 0 || !resolvedSpaceId) return;
+    if (!resolvedSpaceId) return;
 
     const openProposalId = typeof window !== "undefined" ? sessionStorage.getItem("openProposalId") : null;
+
     if (openProposalId) {
       sessionStorage.removeItem("openProposalId");
-      const proposalToOpen = proposals.find(p => p.id === openProposalId);
-      if (proposalToOpen) {
-        handleOpenProposal(proposalToOpen);
-      }
+
+      const handleDeepLink = async () => {
+        // Optimistic check in current list
+        const existing = proposals.find(p => p.id === openProposalId);
+        if (existing) {
+          handleOpenProposal(existing);
+          return;
+        }
+
+        // Fetch if not found locally
+        try {
+          // We fetch it just to verify existence and pass a valid object
+          // handleOpenProposal will fetch full details again but needs an object with ID
+          const response = await proposalApi.getProposal(resolvedSpaceId, openProposalId);
+          if (response.data) {
+            handleOpenProposal(response.data);
+          }
+        } catch (err) {
+          console.error("Deep link fetch failed:", err);
+        }
+      };
+
+      handleDeepLink();
     }
-  }, [proposals, resolvedSpaceId]);
+  }, [resolvedSpaceId, proposals]); // triggering on proposals change allows retry if list loads late, but we clear storage so it runs once effectively
 
   // Handle notification click - receives proposal ID string
   const handleNotificationClick = (proposalId: string) => {
@@ -390,7 +411,7 @@ export default function Proposals({ spaceId, spaceSlug, spaceName, userRole }: P
           const voteCheckResponse = await proposalApi.checkUserVote(resolvedSpaceId, proposal.id);
           const voted = voteCheckResponse.data?.voted || false;
           const userVote = voteCheckResponse.data?.vote || null;
-          
+
           setHasVoted(voted);
           setCurrentUserVote(userVote);
         } catch (err) {
@@ -644,12 +665,12 @@ export default function Proposals({ spaceId, spaceSlug, spaceName, userRole }: P
 
     setIsLoadingAnalytics(true);
     try {
-      
+
       const response = await proposalApi.getProposalAnalytics(resolvedSpaceId, selectedProposal.id);
-      
+
 
       if (response.data) {
-        
+
         setAnalyticsData(response.data);
         setAnalyticsPage(1);
         setViewMode('analytics');

@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
-import PollCard, { Poll } from "../PollCard";
+import PollCard, { Poll, PollStatus } from "../PollCard";
 import { CompassOutline, PeopleOutline, FlashOutline } from "react-ionicons";
+import { proposalApi, Proposal } from "@/app/services/proposalApi";
 
 interface Space {
   id: string;
   name: string;
   image: string;
+  space_id?: string;
 }
 
 interface HomeProps {
@@ -14,136 +16,103 @@ interface HomeProps {
   onExplore?: () => void;
 }
 
-// Mock polls data for different spaces
-const allSpacePolls: Record<string, Poll[]> = {
-  aave: [
-    {
-      id: 101,
-      author: { name: "Aave Team", initials: "AT", badge: "CORE" },
-      title: "Should we increase the staking rewards for AAVE holders?",
-      description: "Proposal to increase staking APY from 4% to 6% to incentivize long-term holding.",
-      status: "active",
-      timeAgo: "3h ago",
-      options: [
-        { label: "Yes, increase to 6%" },
-        { label: "Keep current 4%" },
-        { label: "Increase to 5% (compromise)" },
-      ],
-      votes: 1247,
-      endsIn: "2 days",
-      comments: 89,
-    },
-    {
-      id: 102,
-      author: { name: "Risk Committee", avatar: "https://cryptologos.cc/logos/aave-aave-logo.png", badge: "OFFICIAL" },
-      title: "Add support for new collateral type: stETH",
-      status: "active",
-      timeAgo: "1d ago",
-      options: [
-        { label: "Approve stETH as collateral", percentage: 78, selected: true },
-        { label: "Reject proposal", percentage: 22 },
-      ],
-      votes: 3421,
-      hasVoted: true,
-    },
-  ],
-  uniswap: [
-    {
-      id: 201,
-      author: { name: "Uniswap Labs", initials: "UL", badge: "CORE" },
-      title: "Deploy Uniswap v4 on Base Network",
-      description: "Proposal to expand Uniswap v4 deployment to Base L2 for lower gas fees.",
-      status: "active",
-      timeAgo: "5h ago",
-      options: [
-        { label: "Deploy immediately" },
-        { label: "Wait for more audits" },
-        { label: "Deploy on testnet first" },
-      ],
-      votes: 892,
-      endsIn: "4 days",
-      comments: 45,
-    },
-  ],
-  ens: [
-    {
-      id: 301,
-      author: { name: "ENS DAO", avatar: "https://cryptologos.cc/logos/ethereum-name-service-ens-logo.png", badge: "OFFICIAL" },
-      title: "Reduce ENS domain renewal fees by 20%",
-      description: "Make ENS domains more accessible by reducing annual renewal costs.",
-      status: "active",
-      timeAgo: "8h ago",
-      options: [
-        { label: "Yes, reduce by 20%" },
-        { label: "Reduce by 10% instead" },
-        { label: "Keep current pricing" },
-      ],
-      votes: 2156,
-      endsIn: "5 days",
-      comments: 124,
-    },
-  ],
-  compound: [
-    {
-      id: 401,
-      author: { name: "Compound Finance", initials: "CF", badge: "CORE" },
-      title: "Upgrade interest rate model for USDC market",
-      description: "Implement new dynamic interest rate curve to optimize utilization.",
-      status: "active",
-      timeAgo: "2h ago",
-      options: [
-        { label: "Approve new model", percentage: 65, selected: true },
-        { label: "Request modifications", percentage: 25 },
-        { label: "Reject changes", percentage: 10 },
-      ],
-      votes: 567,
-      hasVoted: true,
-    },
-  ],
-  optimism: [
-    {
-      id: 501,
-      author: { name: "Optimism Collective", initials: "OP", badge: "OFFICIAL" },
-      title: "Allocate 500K OP to developer grants program",
-      description: "Fund the next round of RetroPGF for public goods builders.",
-      status: "active",
-      timeAgo: "12h ago",
-      options: [
-        { label: "Approve full allocation" },
-        { label: "Reduce to 300K OP" },
-        { label: "Postpone to next quarter" },
-      ],
-      votes: 4521,
-      endsIn: "6 days",
-      comments: 203,
-    },
-  ],
-};
-
 export default function Home({ joinedSpaces, onExplore }: HomeProps) {
   const [randomPolls, setRandomPolls] = useState<(Poll & { spaceName: string; spaceImage: string })[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (joinedSpaces.length === 0) return;
 
-    // Collect all polls from joined spaces
-    const allPolls: (Poll & { spaceName: string; spaceImage: string })[] = [];
-    
-    joinedSpaces.forEach((space) => {
-      const spacePolls = allSpacePolls[space.id] || [];
-      spacePolls.forEach((poll) => {
-        allPolls.push({
-          ...poll,
-          spaceName: space.name,
-          spaceImage: space.image,
-        });
-      });
-    });
+    const fetchFeed = async () => {
+      try {
+        setIsLoading(true);
+        const response = await proposalApi.getUserFeed(20);
+        const proposals = response.data || [];
 
-    // Shuffle and pick random polls (max 5)
-    const shuffled = allPolls.sort(() => Math.random() - 0.5);
-    setRandomPolls(shuffled.slice(0, 5));
-  }, [joinedSpaces]);
+        // Map proposals to Poll format
+        const mappedPolls = proposals.map((p) => {
+          // Parse options
+          let options: string[] = [];
+          if (Array.isArray(p.options)) {
+            options = p.options;
+          } else if (typeof p.options === "string") {
+            try {
+              options = JSON.parse(p.options);
+            } catch (e) {
+              options = [];
+            }
+          }
+
+          // Parse results and calculate percentages
+          let results: Record<string, number> = {};
+          if (typeof p.results === "string") {
+            try {
+              results = JSON.parse(p.results);
+            } catch (e) { }
+          } else {
+            results = p.results || {};
+          }
+
+          const totalVotes = Object.values(results).reduce((sum, val) => sum + Number(val), 0);
+
+          const pollOptions = options.map((label, index) => {
+            const votes = Number(results[index.toString()] || 0);
+            const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+            return {
+              label,
+              percentage,
+              selected: false // We don't have user specific vote selection here easily without extra check
+            };
+          });
+
+          // Calculate time ago
+          const created = new Date(p.created_at);
+          const now = new Date();
+          const seconds = Math.floor((now.getTime() - created.getTime()) / 1000);
+          let timeAgo = "just now";
+          if (seconds > 604800) timeAgo = `${Math.floor(seconds / 604800)}w ago`;
+          else if (seconds > 86400) timeAgo = `${Math.floor(seconds / 86400)}d ago`;
+          else if (seconds > 3600) timeAgo = `${Math.floor(seconds / 3600)}h ago`;
+          else if (seconds > 60) timeAgo = `${Math.floor(seconds / 60)}m ago`;
+
+          // Calculate ends in
+          const end = new Date(p.end_date);
+          const diff = end.getTime() - now.getTime();
+          let endsIn;
+          if (diff > 0) {
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            endsIn = days > 0 ? `${days} days` : `${Math.floor(diff / (1000 * 60 * 60))} hours`;
+          }
+
+          return {
+            id: p.id,
+            author: {
+              name: p.creator_username || "Unknown",
+              avatar: p.creator_pic || undefined,
+              initials: p.creator_username ? p.creator_username.substring(0, 2).toUpperCase() : "UK"
+            },
+            title: p.title,
+            description: p.description || undefined,
+            status: p.status as PollStatus,
+            timeAgo,
+            options: pollOptions,
+            votes: p.vote_count || 0,
+            endsIn,
+            spaceName: p.space_name || "Unknown Space",
+            spaceImage: p.space_image || "",
+          };
+        });
+
+        setRandomPolls(mappedPolls);
+      } catch (err) {
+        console.error("Failed to load feed:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFeed();
+  }, [joinedSpaces]); // Re-fetch if joinedSpaces changes (e.g. initial load)
 
   // Empty state - no joined spaces
   if (joinedSpaces.length === 0) {
@@ -223,33 +192,43 @@ export default function Home({ joinedSpaces, onExplore }: HomeProps) {
 
       {/* Polls Feed */}
       <div className="space-y-4 md:space-y-5">
-        {randomPolls.map((poll) => (
-          <div key={poll.id} className="relative">
-            {/* Space Badge */}
-            <div className="absolute -top-2 left-3 md:left-4 z-10 flex items-center gap-1.5 md:gap-2 bg-white dark:bg-dark-bg-secondary px-2 md:px-3 py-0.5 md:py-1 rounded-full border border-base-border dark:border-dark-border shadow-sm">
-              <img
-                src={poll.spaceImage}
-                alt={poll.spaceName}
-                className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full object-cover"
-              />
-              <span className="text-[10px] md:text-xs font-medium text-base-text-secondary dark:text-dark-text-secondary">
-                {poll.spaceName}
-              </span>
-            </div>
-            <div className="pt-2">
-              <PollCard poll={poll} />
-            </div>
+        {isLoading ? (
+          <div className="text-center py-12 text-base-text-secondary dark:text-dark-text-secondary">
+            Loading feed...
           </div>
-        ))}
+        ) : randomPolls.length > 0 ? (
+          randomPolls.map((poll) => (
+            <div key={poll.id} className="relative">
+              {/* Space Badge */}
+              <div className="absolute -top-2 left-3 md:left-4 z-10 flex items-center gap-1.5 md:gap-2 bg-white dark:bg-dark-bg-secondary px-2 md:px-3 py-0.5 md:py-1 rounded-full border border-base-border dark:border-dark-border shadow-sm">
+                {poll.spaceImage ? (
+                  <img
+                    src={poll.spaceImage}
+                    alt={poll.spaceName}
+                    className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-primary/20 flex items-center justify-center text-[8px] font-bold text-primary">
+                    {poll.spaceName.charAt(0)}
+                  </div>
+                )}
+                <span className="text-[10px] md:text-xs font-medium text-base-text-secondary dark:text-dark-text-secondary">
+                  {poll.spaceName}
+                </span>
+              </div>
+              <div className="pt-2">
+                <PollCard poll={poll} />
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12 md:py-16">
+            <p className="text-sm md:text-base text-base-text-secondary dark:text-dark-text-secondary">
+              No active polls in your spaces right now.
+            </p>
+          </div>
+        )}
       </div>
-
-      {randomPolls.length === 0 && joinedSpaces.length > 0 && (
-        <div className="text-center py-12 md:py-16">
-          <p className="text-sm md:text-base text-base-text-secondary dark:text-dark-text-secondary">
-            No active polls in your spaces right now.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

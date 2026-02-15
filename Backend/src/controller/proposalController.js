@@ -494,6 +494,32 @@ const closeProposal = async (req, res) => {
     });
   }
 };
+
+// Get user feed (random proposals from joined spaces)
+const getUserFeed = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { limit = 20 } = req.query;
+
+    const proposals = await Proposal.getUserProposalFeed(userId, parseInt(limit));
+
+    // Map to frontend friendly format if needed, but Proposal model returns mostly correct fields
+    // Ensure space_image works (s.profile_pic as space_image)
+
+    res.json({
+      success: true,
+      data: proposals
+    });
+  } catch (error) {
+    console.error('Get user feed error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch feed',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createProposal,
   getSpaceProposals,
@@ -502,5 +528,6 @@ module.exports = {
   getProposalVotes,
   checkUserVote,
   getProposalAnalytics,
-  closeProposal
+  closeProposal,
+  getUserFeed
 };

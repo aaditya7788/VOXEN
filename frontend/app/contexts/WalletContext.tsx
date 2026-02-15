@@ -21,7 +21,7 @@ export interface WalletContextType {
   // Actions
   connectWallet: () => Promise<string>;
   disconnectWallet: () => void;
-  switchNetwork: (useTestnet: boolean) => Promise<void>;
+  switchNetwork: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -129,10 +129,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setError(null);
   }, []);
 
-  const switchNetwork = useCallback(async (useTestnet: boolean) => {
+  const switchNetwork = useCallback(async () => {
     setError(null);
-    const targetChainId = useTestnet ? 84532 : 8453;
-    const networkConfig = useTestnet
+    const targetChainId = CHAIN_ID;
+    const isTestnetTarget = targetChainId === 84532;
+
+    const networkConfig = isTestnetTarget
       ? {
         chainId: '0x14a34', // 84532
         chainName: 'Base Sepolia',

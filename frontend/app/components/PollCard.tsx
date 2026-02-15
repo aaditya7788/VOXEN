@@ -4,7 +4,7 @@ import { useState } from "react";
 export type PollStatus = "active" | "pending" | "closed";
 
 export interface Poll {
-  id: number;
+  id: number | string;
   author: { name: string; avatar?: string; initials?: string; badge?: string };
   title: string;
   description?: string;
@@ -128,7 +128,7 @@ export default function PollCard({ poll }: { poll: Poll }) {
 
 function ClosedPollOptions({ options }: { options: Poll["options"] }) {
   const maxPercentage = Math.max(...options.map((o) => o.percentage || 0));
-  
+
   return (
     <div className="flex flex-col sm:flex-row gap-2 md:gap-3 mb-4">
       {options.map((option) => {
@@ -182,17 +182,16 @@ function VotedPollOptions({ options }: { options: Poll["options"] }) {
   );
 }
 
-function VotingOptions({ pollId, options, selectedOption, onSelect }: { pollId: number; options: Poll["options"]; selectedOption: string | null; onSelect: (label: string) => void }) {
+function VotingOptions({ pollId, options, selectedOption, onSelect }: { pollId: number | string; options: Poll["options"]; selectedOption: string | null; onSelect: (label: string) => void }) {
   return (
     <div className="space-y-2 md:space-y-3 mb-4 md:mb-6">
       {options.map((option) => (
         <label
           key={option.label}
-          className={`flex items-center justify-between p-3 md:p-3.5 rounded-lg md:rounded-xl border cursor-pointer group transition-all ${
-            selectedOption === option.label
-              ? "border-primary bg-primary/[0.02] dark:bg-primary/[0.05] shadow-[0_0_0_1px_rgba(0,82,255,1)]"
-              : "border-base-border dark:border-dark-border hover:border-primary/50 dark:hover:border-primary/50 active:border-primary/50 bg-white dark:bg-dark-bg-secondary"
-          }`}
+          className={`flex items-center justify-between p-3 md:p-3.5 rounded-lg md:rounded-xl border cursor-pointer group transition-all ${selectedOption === option.label
+            ? "border-primary bg-primary/[0.02] dark:bg-primary/[0.05] shadow-[0_0_0_1px_rgba(0,82,255,1)]"
+            : "border-base-border dark:border-dark-border hover:border-primary/50 dark:hover:border-primary/50 active:border-primary/50 bg-white dark:bg-dark-bg-secondary"
+            }`}
         >
           <span className={`text-xs md:text-sm ${selectedOption === option.label ? "font-bold text-primary" : "font-medium text-base-text dark:text-dark-text group-hover:text-primary"} transition-colors`}>
             {option.label}

@@ -301,6 +301,35 @@ const countActiveProposals = async (spaceId) => {
   return parseInt(result.total) || 0;
 };
 
+// Get proposals for all spaces a user has joined (User Feed)
+const getUserProposalFeed = async (userId, limit = 20) => {
+  // 1. Get user's joined spaces
+  const userSpaces = await sql`
+    SELECT space_id FROM space_members WHERE user_id = ${userId} AND is_active = true
+  `;
+
+  if (!userSpaces || userSpaces.length === 0) {
+    return [];
+  }
+
+  const spaceIds = userSpaces.map(s => s.space_id);
+
+  // 2. Get active proposals from these spaces
+  // Random order using RANDOM() for "Feed" effect
+  const proposals = await sql`
+    SELECT p.*, s.name as space_name, s.logo as space_image, u.username as creator_username, u.profile_pic as creator_pic
+    FROM proposals p
+    JOIN spaces s ON p.space_id = s.id
+    LEFT JOIN users u ON p.creator_id = u.id
+    WHERE p.space_id IN ${sql(spaceIds)}
+    AND p.status = 'active'
+    ORDER BY RANDOM()
+    LIMIT ${limit}
+  `;
+
+  return proposals;
+};
+
 module.exports = {
   createProposal,
   getProposalById,
@@ -310,5 +339,6 @@ module.exports = {
   getProposalVotes,
   updateProposalStatus,
   calculateResults,
-  countActiveProposals
+  countActiveProposals,
+  getUserProposalFeed
 };

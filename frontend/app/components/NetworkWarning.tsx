@@ -18,9 +18,7 @@ export default function NetworkWarning() {
         setIsSwitching(true);
         setError(null);
         try {
-            // Determine if target is testnet based on CHAIN_ID
-            const isTestnet = CHAIN_ID === BASE_SEPOLIA_CHAIN_ID;
-            await switchNetwork(isTestnet);
+            await switchNetwork();
         } catch (err: any) {
             setError(err.message || 'Failed to switch network');
         } finally {

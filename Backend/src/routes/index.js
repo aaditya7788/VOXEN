@@ -8,6 +8,7 @@ const spaceRoutes = require('./spaceRoutes');
 const proposalRoutes = require('./proposalRoutes');
 const overviewRoutes = require('./overviewRoutes');
 const activityRoutes = require('./activityRoutes');
+const feedRoutes = require('./feedRoutes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -17,6 +18,7 @@ router.use('/spaces', spaceRoutes);
 router.use('/spaces', proposalRoutes); // Proposals nested under spaces
 router.use('/overview', overviewRoutes);
 router.use('/activities', activityRoutes);
+router.use('/feed', feedRoutes);
 
 // Health check route
 router.get('/health', (req, res) => {

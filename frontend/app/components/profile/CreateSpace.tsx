@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowBackOutline,
@@ -12,12 +12,8 @@ import {
   SearchOutline
 } from "react-ionicons";
 
-interface CreateSpaceProps {
-  onBack?: () => void;
-  onCreateSpace?: (spaceData: SpaceData) => void;
-}
-
 interface SpaceData {
+  id?: string;
   name: string;
   description: string;
   logo: string | null;
@@ -25,6 +21,14 @@ interface SpaceData {
   visibility: "public" | "private";
   voting_strategy: string;
   username?: string;
+  slug?: string;
+}
+
+interface CreateSpaceProps {
+  onBack?: () => void;
+  onCreateSpace?: (spaceData: SpaceData) => void;
+  mode?: "create" | "edit";
+  initialData?: SpaceData | null;
 }
 
 const CATEGORIES = [
@@ -43,7 +47,7 @@ const CATEGORIES = [
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
-export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps) {
+export default function CreateSpace({ onBack, onCreateSpace, mode = "create", initialData }: CreateSpaceProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [spaceName, setSpaceName] = useState("");
@@ -58,6 +62,18 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      setSpaceName(initialData.name || "");
+      setUsername(initialData.username || initialData.slug || "");
+      setDescription(initialData.description || "");
+      setCategory(initialData.category || "General");
+      setImagePreview(initialData.logo || null);
+      setVisibility(initialData.visibility || "public");
+      setVotingStrategy(initialData.voting_strategy || "one-person-one-vote");
+    }
+  }, [mode, initialData]);
 
   const filteredCategories = CATEGORIES.filter(c =>
     c.toLowerCase().includes(categorySearch.toLowerCase())
@@ -88,7 +104,7 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
       const token = localStorage.getItem("voxen_token");
 
       if (!token) {
-        setError("Please sign in to create a space");
+        setError("Please sign in to continue");
         return;
       }
 
@@ -102,8 +118,14 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
         voting_strategy: votingStrategy,
       };
 
-      const response = await fetch(`${API_URL}/spaces`, {
-        method: "POST",
+      const url = mode === "edit" && initialData?.id
+        ? `${API_URL}/spaces/${initialData.id}`
+        : `${API_URL}/spaces`;
+
+      const method = mode === "edit" ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -114,48 +136,59 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Failed to create space");
+        setError(data.message || `Failed to ${mode} space`);
         return;
       }
 
-      // Success! Add to local cache instantly
-      const createdSpace = data.data;
+      // Success logic
+      const resultSpace = data.data;
+
+      // Update cache logic
       try {
         const cached = localStorage.getItem("voxen_user_spaces");
-        const spaces = cached ? JSON.parse(cached) : [];
+        let spaces = cached ? JSON.parse(cached) : [];
 
-        // Add new space to cache
-        const newSpace = {
-          id: createdSpace.id,
-          name: createdSpace.name,
-          slug: createdSpace.slug,
-          logo: createdSpace.logo || null,
-          user_role: "owner",
-          username: createdSpace.username || null,
-          invite_token: createdSpace.invite_token || null,
-        };
-
-        spaces.unshift(newSpace);
+        if (mode === "create") {
+          const newSpace = {
+            id: resultSpace.id,
+            name: resultSpace.name,
+            slug: resultSpace.slug,
+            logo: resultSpace.logo || null,
+            user_role: "owner",
+            username: resultSpace.username || null,
+            invite_token: resultSpace.invite_token || null,
+          };
+          spaces.unshift(newSpace);
+        } else {
+          // Edit mode - update existing space in cache
+          spaces = spaces.map((s: any) => {
+            // Check by ID or slug/username
+            if (s.id === resultSpace.id || s.slug === initialData?.slug) {
+              return {
+                ...s,
+                name: resultSpace.name,
+                slug: resultSpace.slug,
+                logo: resultSpace.logo,
+                username: resultSpace.username
+              };
+            }
+            return s;
+          });
+        }
         localStorage.setItem("voxen_user_spaces", JSON.stringify(spaces));
       } catch (cacheError) {
         console.error("Failed to update local cache:", cacheError);
       }
 
-      // Call callback if provided with the created space data
+      // Call callback
       onCreateSpace?.({
-        name: spaceName,
-        description,
-        logo: imagePreview,
-        category,
-        visibility,
-        voting_strategy: votingStrategy,
+        ...resultSpace,
+        logo: resultSpace.logo || imagePreview,
       });
 
-      // Redirect removed as per user request
-      // router.push(`/spaces/${createdSpace.slug}`);
       setIsSuccess(true);
     } catch (err: any) {
-      setError(err.message || "Failed to create space");
+      setError(err.message || `Failed to ${mode} space`);
     } finally {
       setIsSubmitting(false);
     }
@@ -173,16 +206,16 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
           <CheckmarkCircleOutline width="48px" height="48px" color="currentColor" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-base-text dark:text-dark-text">Space Created!</h2>
+          <h2 className="text-2xl font-bold text-base-text dark:text-dark-text">Space {mode === "edit" ? "Updated" : "Created"}!</h2>
           <p className="text-base-text-secondary dark:text-dark-text-secondary">
-            Your community <strong>{spaceName}</strong> is ready.
+            Your community <strong>{spaceName}</strong> has been {mode === "edit" ? "updated" : "created"}.
           </p>
         </div>
         <button
           onClick={onBack}
           className="px-8 py-3 bg-primary hover:bg-primary-hover text-white font-semibold rounded-xl transition-colors"
         >
-          Go to Home
+          Back to Space
         </button>
       </div>
     );
@@ -200,7 +233,9 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
             <ArrowBackOutline width="24px" height="24px" color="currentColor" />
           </button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-base-text dark:text-dark-text">Create a Space</h1>
+            <h1 className="text-lg md:text-xl font-bold text-base-text dark:text-dark-text">
+              {mode === "edit" ? "Update Space" : "Create a Space"}
+            </h1>
             <p className="text-xs md:text-sm text-base-text-secondary dark:text-dark-text-secondary">
               Step {step} of 3
             </p>
@@ -226,10 +261,10 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
           <div className="space-y-6">
             <div className="text-center mb-6 md:mb-8">
               <h2 className="text-xl md:text-2xl font-bold text-base-text dark:text-dark-text mb-2">
-                Let&apos;s start with the basics
+                {mode === "edit" ? "Update basics" : "Let's start with the basics"}
               </h2>
               <p className="text-sm md:text-base text-base-text-secondary dark:text-dark-text-secondary">
-                Give your space a name, logo and category
+                {mode === "edit" ? "Update your space name, logo or category" : "Give your space a name, logo and category"}
               </p>
             </div>
 
@@ -371,10 +406,10 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
           <div className="space-y-6">
             <div className="text-center mb-6 md:mb-8">
               <h2 className="text-xl md:text-2xl font-bold text-base-text dark:text-dark-text mb-2">
-                Tell us about your space
+                {mode === "edit" ? "Update details" : "Tell us about your space"}
               </h2>
               <p className="text-sm md:text-base text-base-text-secondary dark:text-dark-text-secondary">
-                A good description helps members understand your community
+                {mode === "edit" ? "Update your space description or visibility" : "A good description helps members understand your community"}
               </p>
             </div>
 
@@ -469,7 +504,7 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
           <div className="space-y-6">
             <div className="text-center mb-6 md:mb-8">
               <h2 className="text-xl md:text-2xl font-bold text-base-text dark:text-dark-text mb-2">
-                Configure voting
+                {mode === "edit" ? "Update voting config" : "Configure voting"}
               </h2>
               <p className="text-sm md:text-base text-base-text-secondary dark:text-dark-text-secondary">
                 Choose how voting power is distributed
@@ -621,10 +656,10 @@ export default function CreateSpace({ onBack, onCreateSpace }: CreateSpaceProps)
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    <span>Creating...</span>
+                    <span>{mode === "edit" ? "Updating..." : "Creating..."}</span>
                   </>
                 ) : (
-                  "Create Space"
+                  <>{mode === "edit" ? "Update Space" : "Create Space"}</>
                 )}
               </button>
             </div>

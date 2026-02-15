@@ -28,6 +28,8 @@ export interface Proposal {
   transaction_hash?: string | null;
   contract_address?: string | null;
   blockchain_verified?: boolean;
+  space_name?: string;
+  space_image?: string;
 }
 
 export interface ProposalListResponse {
@@ -190,6 +192,14 @@ export const proposalApi = {
   ): Promise<{ success?: boolean; data?: any }> {
     return request(
       `${API_BASE_URL}/spaces/${spaceId}/proposals/${proposalId}/analytics`,
+      {},
+      true
+    );
+  },
+
+  async getUserFeed(limit = 10): Promise<{ success?: boolean; data?: Proposal[] }> {
+    return request(
+      `${API_BASE_URL}/feed?limit=${limit}`,
       {},
       true
     );

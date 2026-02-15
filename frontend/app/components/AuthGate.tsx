@@ -14,6 +14,7 @@ import {
   CheckmarkDoneOutline,
 } from "react-ionicons";
 import { profileApi } from "@/app/services/profileApi";
+import { CHAIN_ID } from "../contracts/proposalHashOptimized";
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -490,11 +491,14 @@ export default function AuthGate({ children }: AuthGateProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        switchNetwork(true); // Base Sepolia
+                        switchNetwork(); // Base Sepolia
                       }}
-                      className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${chainId === 84532
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                        : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
+                      disabled={CHAIN_ID !== 84532}
+                      className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${CHAIN_ID !== 84532
+                        ? "border-gray-100 dark:border-gray-800 opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50"
+                        : chainId === 84532
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
                         }`}
                     >
                       <div
@@ -527,11 +531,14 @@ export default function AuthGate({ children }: AuthGateProps) {
                     <button
                       type="button"
                       onClick={() => {
-                        switchNetwork(false); // Base Mainnet
+                        switchNetwork(); // Base Mainnet
                       }}
-                      className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${chainId === 8453
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                        : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
+                      disabled={CHAIN_ID !== 8453}
+                      className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${CHAIN_ID !== 8453
+                        ? "border-gray-100 dark:border-gray-800 opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800/50"
+                        : chainId === 8453
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
                         }`}
                     >
                       <div
@@ -587,7 +594,7 @@ export default function AuthGate({ children }: AuthGateProps) {
                   </button>
                   <button
                     onClick={handleSignIn}
-                    disabled={signingIn || isLoading || (chainId !== 84532 && chainId !== 8453)}
+                    disabled={signingIn || isLoading || chainId !== CHAIN_ID}
                     className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {signingIn || isLoading ? (
