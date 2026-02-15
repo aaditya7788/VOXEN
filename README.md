@@ -56,7 +56,7 @@ By leveraging **Supabase** for off-chain data and **Smart Contracts** for on-cha
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/your-username/voxen.git
+    git clone https://github.com/aaditya7788/voxen.git
     cd voxen
     ```
 
