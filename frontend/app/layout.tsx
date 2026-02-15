@@ -1,0 +1,62 @@
+import type { Metadata } from "next";
+import { Inter, Source_Code_Pro } from "next/font/google";
+// Use a simple server-safe wrapper instead of SafeArea to avoid
+// hydration mismatches. SafeArea is a client component that
+// mutates DOM styles at runtime which can differ between server
+// and client renders. We'll keep RootProvider as the client
+// provider and mount client-only SafeArea later if needed.
+import { minikitConfig } from "@/minikit.config";
+import { RootProvider } from "./rootProvider";
+import "./globals.css";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: minikitConfig.miniapp.name,
+    description: minikitConfig.miniapp.description,
+    viewport: {
+      width: "device-width",
+      initialScale: 1,
+      maximumScale: 1,
+      userScalable: false,
+    },
+    other: {
+      "fc:miniapp": JSON.stringify({
+        version: minikitConfig.miniapp.version,
+        imageUrl: minikitConfig.miniapp.heroImageUrl,
+        button: {
+          title: `Launch ${minikitConfig.miniapp.name}`,
+          action: {
+            name: `Launch ${minikitConfig.miniapp.name}`,
+            type: "launch_miniapp",
+          },
+        },
+      }),
+    },
+  };
+}
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const sourceCodePro = Source_Code_Pro({
+  variable: "--font-source-code-pro",
+  subsets: ["latin"],
+});
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;                                                                                                            
+}>) {
+  return (
+    <RootProvider>
+      <html lang="en">
+        <body className={`${inter.variable} ${sourceCodePro.variable}`} suppressHydrationWarning>
+          <div>{children}</div>
+        </body>
+      </html>
+    </RootProvider>
+  );
+}

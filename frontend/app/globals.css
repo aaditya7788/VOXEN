@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #0052FF;
+  --color-primary-hover: #0045D8;
+  --color-base-bg: #FFFFFF;
+  --color-base-bg-secondary: #F9FAFB;
+  --color-base-border: #E5E7EB;
+  --color-base-text: #0F172A;
+  --color-base-text-secondary: #64748B;
+  --color-dark-bg: #0D0D0D;
+  --color-dark-bg-secondary: #1A1A1A;
+  --color-dark-border: #333333;
+  --color-dark-text: #FFFFFF;
+  --color-dark-text-secondary: #A1A1AA;
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 15px rgba(0, 82, 255, 0.15);
+}
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #0a0a0a;
+      --foreground: #ededed;
+    }
+  }
+
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: var(--font-inter), sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  code {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    font-family: var(--font-source-code-pro), monospace;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem calc(0.25rem + 2px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    code {
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html {
+      color-scheme: dark;
+    }
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  /* No scrollbar utility - alias for flexibility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  /* Safe area insets for devices with notch/home indicator */
+  .h-safe-area-inset-bottom {
+    height: env(safe-area-inset-bottom, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
