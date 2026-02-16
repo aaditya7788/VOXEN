@@ -89,7 +89,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
         <div className="absolute top-full mt-2 right-0 bg-gray-900 border border-gray-700 rounded-lg p-3 z-50 min-w-max">
           <div className="text-sm text-gray-400 mb-2">Connected Address:</div>
           <div className="text-white font-mono text-sm break-all mb-3">{userAddress}</div>
-          
+
           {showChainInfo && (
             <div className="text-sm text-gray-400 mb-2">Network:</div>
           )}
@@ -98,7 +98,7 @@ export const ConnectWalletButton: React.FC<ConnectWalletButtonProps> = ({
               {currentChain === 84532 ? '✓ Base Sepolia' : currentChain === 8453 ? '✓ Base Mainnet' : '✗ Wrong Network'}
             </div>
           )}
-          
+
           <button
             onClick={() => {
               navigator.clipboard.writeText(userAddress || '');

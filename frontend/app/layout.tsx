@@ -20,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
       userScalable: false,
     },
     other: {
+      "base:app_id": "69568c524d3a403912ed88e9",
       "fc:miniapp": JSON.stringify({
         version: minikitConfig.miniapp.version,
         imageUrl: minikitConfig.miniapp.heroImageUrl,
@@ -48,7 +49,7 @@ const sourceCodePro = Source_Code_Pro({
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;                                                                                                            
+  children: React.ReactNode;
 }>) {
   return (
     <RootProvider>

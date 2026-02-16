@@ -8,9 +8,7 @@ import { Avatar, Name } from "@coinbase/onchainkit/identity";
 import { base } from "wagmi/chains";
 import {
   ShieldCheckmarkOutline,
-  PersonOutline,
-  MailOutline,
-  AtOutline,
+
   CheckmarkDoneOutline,
 } from "react-ionicons";
 import { profileApi } from "@/app/services/profileApi";
@@ -43,7 +41,6 @@ export default function AuthGate({ children }: AuthGateProps) {
   const [profileData, setProfileData] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [email, setEmail] = useState<string>('');
-  const [emailVerified, setEmailVerified] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -91,9 +88,8 @@ export default function AuthGate({ children }: AuthGateProps) {
           // Check email verification status
           if (data.email_otp_verified) {
             setOtpVerified(true);
-            setEmailVerified(true);
           } else if (data.email_verified_at) {
-            setEmailVerified(true);
+            // No direct state for emailVerified, derived from user
           }
 
           // If profile is complete (username AND name AND email all exist), close modal
@@ -258,7 +254,6 @@ export default function AuthGate({ children }: AuthGateProps) {
       }
 
       setOtpVerified(true);
-      setEmailVerified(true);
       setOtpSent(false);
       if (otpRef.current) {
         otpRef.current.value = "";
@@ -271,7 +266,7 @@ export default function AuthGate({ children }: AuthGateProps) {
   };
 
   // Handle email verification request (old method - kept for backward compatibility)
-  const handleEmailVerification = async () => {
+  const _handleEmailVerification = async () => {
     const email = emailRef.current?.value;
     if (!email) {
       setLocalError("Please enter an email address");
