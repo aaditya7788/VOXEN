@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const config = require('../config');
 const User = require('../model/User');
 const { supabaseClient } = require('../utils/supabaseClient');
+const emailService = require('../utils/emailService');
 const { createPublicClient, http } = require('viem');
 const { base, baseSepolia } = require('viem/chains');
 
@@ -17,17 +18,6 @@ const baseClient = createPublicClient({
 const baseSepoliaClient = createPublicClient({
   chain: baseSepolia,
   transport: http()
-});
-
-// Nodemailer transporter setup
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
 });
 
 // Generate JWT token
@@ -610,20 +600,8 @@ const requestEmailVerification = async (req, res) => {
     // Update email and store in DB (not yet verified)
     await User.updateUser(userId, { email });
 
-    // Send verification email via Supabase Auth
-    const { data, error } = await supabaseClient.auth.resend({
-      type: 'signup',
-      email: email,
-      options: {
-        data: {
-          user_id: userId
-        }
-      }
-    });
-
-    if (error) {
-      throw error;
-    }
+    // Send verification email via AWS SES instead of Supabase
+    await emailService.sendOTPEmail(email, "VERIFY", user.name || 'User');
 
     res.json({
       success: true,
@@ -750,52 +728,14 @@ const sendEmailOTP = async (req, res) => {
       email_otp_verified: false
     });
 
-    // Send OTP via Nodemailer
+    // Send OTP via centralized Email Service
     try {
-      const mailOptions = {
-        from: process.env.SMTP_FROM,
-        to: email,
-        subject: 'Your Email Verification Code - Voxen',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h2 style="margin: 0;">Voxen Email Verification</h2>
-            </div>
-            <div style="padding: 30px; background-color: #f9f9f9; border-radius: 0 0 8px 8px;">
-              <p style="color: #333; font-size: 16px; margin-bottom: 20px;">Hello ${user.name || 'there'},</p>
-              <p style="color: #666; font-size: 14px; margin-bottom: 30px;">We received a request to verify your email address. Use the code below to complete your verification:</p>
-              
-              <div style="background-color: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0;">
-                <p style="margin: 0; font-size: 12px; color: #999; margin-bottom: 10px;">Verification Code</p>
-                <p style="margin: 0; font-size: 48px; font-weight: bold; color: #667eea; letter-spacing: 10px;">${otp}</p>
-              </div>
-              
-              <p style="color: #666; font-size: 13px; margin: 30px 0;">
-                <strong>This code will expire in 10 minutes.</strong>
-              </p>
-              <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
-                If you didn't request this verification, please ignore this email or contact our support team.
-              </p>
-              
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-              
-              <p style="color: #999; font-size: 12px; margin: 0;">
-                © 2026 Voxen. All rights reserved.<br>
-                This is an automated message, please do not reply to this email.
-              </p>
-            </div>
-          </div>
-        `,
-        text: `Your email verification code is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this, please ignore this email.`
-      };
-
-      await transporter.sendMail(mailOptions);
-
+      await emailService.sendOTPEmail(email, otp, user.name || 'User');
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       return res.status(500).json({
         success: false,
-        message: 'Failed to send OTP email',
+        message: 'Failed to send OTP email via AWS SES',
         error: emailError.message
       });
     }
