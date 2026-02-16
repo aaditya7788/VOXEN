@@ -5,6 +5,19 @@ const nodemailer = require('nodemailer');
 const config = require('../config');
 const User = require('../model/User');
 const { supabaseClient } = require('../utils/supabaseClient');
+const { createPublicClient, http } = require('viem');
+const { base, baseSepolia } = require('viem/chains');
+
+// Initialize Viem clients for signature verification
+const baseClient = createPublicClient({
+  chain: base,
+  transport: http()
+});
+
+const baseSepoliaClient = createPublicClient({
+  chain: baseSepolia,
+  transport: http()
+});
 
 // Nodemailer transporter setup
 const transporter = nodemailer.createTransport({
@@ -100,11 +113,27 @@ const verifyAndLogin = async (req, res) => {
     // Reconstruct the message that was signed
     const message = `Sign this message to verify your wallet ownership.\n\nNonce: ${nonce}\nWallet: ${normalizedAddress}\n\nThis signature will not trigger any blockchain transaction.`;
 
-    // Verify signature
-    let recoveredAddress;
+    // Verify signature using Viem (supports both EOA and Smart Contract Wallets via EIP-1271)
+    let isValid = false;
     try {
-      recoveredAddress = ethers.verifyMessage(message, signature);
+      // Try Base Mainnet first
+      isValid = await baseClient.verifyMessage({
+        address: normalizedAddress,
+        message: message,
+        signature: signature
+      });
+
+      // If failed, try Sepolia (in case user is on testnet)
+      if (!isValid) {
+        isValid = await baseSepoliaClient.verifyMessage({
+          address: normalizedAddress,
+          message: message,
+          signature: signature
+        });
+      }
     } catch (err) {
+      console.error('Signature verification error:', err);
+      // Fallback for malformed signatures
       return res.status(401).json({
         success: false,
         message: 'Invalid signature format',
@@ -112,12 +141,11 @@ const verifyAndLogin = async (req, res) => {
       });
     }
 
-    // Check if recovered address matches
-    if (recoveredAddress.toLowerCase() !== normalizedAddress) {
+    if (!isValid) {
       return res.status(401).json({
         success: false,
-        message: 'Signature verification failed. Address mismatch.',
-        code: 'SIGNATURE_MISMATCH'
+        message: 'Signature verification failed',
+        code: 'INVALID_SIGNATURE'
       });
     }
 
@@ -762,7 +790,7 @@ const sendEmailOTP = async (req, res) => {
       };
 
       await transporter.sendMail(mailOptions);
-      
+
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       return res.status(500).json({
