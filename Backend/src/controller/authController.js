@@ -1,7 +1,7 @@
 // Auth Controller - Handle login/register logic
 const jwt = require('jsonwebtoken');
 const { ethers } = require('ethers');
-const nodemailer = require('nodemailer');
+
 const config = require('../config');
 const User = require('../model/User');
 const { supabaseClient } = require('../utils/supabaseClient');
@@ -597,11 +597,20 @@ const requestEmailVerification = async (req, res) => {
       });
     }
 
-    // Update email and store in DB (not yet verified)
-    await User.updateUser(userId, { email });
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Update email and store in DB with OTP
+    await User.updateUser(userId, {
+      email,
+      email_otp: otp,
+      email_otp_created_at: new Date(),
+      email_otp_attempts: 0,
+      email_otp_verified: false
+    });
 
     // Send verification email via AWS SES instead of Supabase
-    await emailService.sendOTPEmail(email, "VERIFY", user.name || 'User');
+    await emailService.sendOTPEmail(email, otp, user.name || 'User');
 
     res.json({
       success: true,
